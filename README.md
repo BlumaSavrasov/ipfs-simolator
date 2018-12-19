@@ -1,1 +1,1 @@
-# ipfs-simolator
+# ipfs-simulator
