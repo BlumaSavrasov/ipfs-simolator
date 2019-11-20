@@ -9,12 +9,16 @@ import (
 type Connection struct{
 	_nFirstNodeId int
 	_nSecondNodeId int
-	_dbLatency int
+	_bUpSpeed int // speed of upload - in bytes/sec
+	_bDownSpeed int // speed of download - in bytes/sec
+	_dbLatency int // in microseconds
 }
 func NewConnection(nFirstNodeId int,nSecondNodeId int)*Connection{
 	connection:=new(Connection)
 	connection._nFirstNodeId=nFirstNodeId
 	connection._nSecondNodeId=nSecondNodeId
+	// SKA: The latency should be calculated based on ASes the First and Second nodes belong to
+	// SKA: up/down speeds should be calculated based on initial nodes setup
 	connection._dbLatency=rand.Intn(20)
 	return connection
 }
@@ -27,8 +31,8 @@ func (c Connection) String() string {
 var g_nGlobalId=0
 type Node struct {
 	_nId int
-	_nMyASId int//++++++++++++++++++++++++++++++++++++++
-	_nMyCountryId int//+++++++++++++++++++++++++++++++++++++++need to had in constuctor
+	_nMyASId int //++++++++++++++++++++++++++++++++++++++ // SKA: IMHO not needed
+	_nMyCountryId int //+++++++++++++++++++++++++++++++++++++++need to had in constuctor // SKA: IMHO not needed
 	_rgContent [] int
 	_nNumOfBlocks int
 	_rgConnections []Connection
@@ -51,7 +55,9 @@ func NewNode(numOfBlocks int) *Node {
 	return node
 }
 
-
+// SKA TDB: calculate node up/down speed and latency
+// Do not create connections, they belong to runtime
+// content is also something we should "generate" during runtime.
 func (n Node) String() string {
 	var node []string
 	node=append(node,fmt.Sprintf("[node with id: %d,",n._nId))
@@ -72,10 +78,12 @@ type AS struct{
 	_numOfNodes_n int
 	_ASN int
 }
+// SKA TBD: add amount of nodes arg
 func NewAS(numOfNodes_n int)*AS{
 	fmt.Println("newAS")
 	AS:=new(AS)
 	g_nGlobalASN++
+	// SKA TBD: create nodes as per args
 	AS._rgSetOfNodes=make([]Node,numOfNodes_n)
 	AS._ASN=g_nGlobalASN
 	for  i:=0 ;i<numOfNodes_n ;i++  {
@@ -97,18 +105,20 @@ func (a AS) String() string {
 //*********************************CLASS COUNTRY**************************************************************
 type Country struct{
 	_Name string
-	_CentralAS AS
+	//_CentralAS AS //SKA: no need. Assume that all ASes in the same country have 10ms latency and unlimited bandwidth
 	_rgAS []AS
 	_numOfAS int
 }
+// SKA: TBD: add more variables
 func newCountry(numOfAS int) *Country {
 	fmt.Println("newCountry")
 	country:=new(Country)
 	country._Name=""
 	country._numOfAS=numOfAS
-	country._CentralAS=*NewAS(rand.Intn(100))
+//	country._CentralAS=*NewAS(rand.Intn(100))
 	country._rgAS=make([]AS,numOfAS)
 	for i:=0;i<country._numOfAS ;i++  {
+		// SKA: TBD: create ASes as per args.
 		country._rgAS[i]=*NewAS(rand.Intn(100))
 	}
 	return country
@@ -125,7 +135,17 @@ func (c Country) String() string {
 	return fmt.Sprintf(strings.Join(country,"\n"))
 }
 //*****************************END OF CLASS COUNTRY*********************************************************
+var g_world []AS
+
+func newWorld(){
+	// Append to world country USA with 100 ASes with 1000 nodes in each, where 20% of nodes
+	// are on low-latency colos and rest are ADSL users
+	g_world=append(NewCountry("USA",100,1000,20))
+	g_world=append(NewCountry("Israel",10, 100, 5))
+}
 func main() {
+	// SKA: invoke create_world function
+	// It then creates (in this order) Countries, ASes, Nodes with flexible distribution
 	
 }
 
